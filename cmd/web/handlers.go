@@ -14,6 +14,9 @@ import (
 	"github.com/phpdave11/gofpdf/contrib/gofpdi"
 )
 
+var pathToManual = "./pdf"
+var tmpPath = "./tmp"
+
 func (app *Config) HomePage(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, "home.page.gohtml", nil)
 }
@@ -42,7 +45,7 @@ func (app *Config) PostLoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check password
-	validPassword, err := user.PasswordMatches(password)
+	validPassword, err := app.Models.User.PasswordMatches(password)
 	if err != nil {
 		app.Session.Put(r.Context(), "error", "Invalid Password.")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -97,7 +100,7 @@ func (app *Config) PostRegisterPage(w http.ResponseWriter, r *http.Request) {
 		IsAdmin:   0,
 	}
 
-	_, err = user.Insert(user)
+	_, err = app.Models.User.Insert(user)
 	if err != nil {
 		app.ErrorLog.Println(err)
 		app.Session.Put(r.Context(), "error", "Unable to create user.")
@@ -144,7 +147,7 @@ func (app *Config) ActivateAccount(w http.ResponseWriter, r *http.Request) {
 
 	u.Active = 1
 
-	err = u.Update()
+	err = app.Models.User.Update(*u)
 
 	if err != nil {
 		app.Session.Put(r.Context(), "error", "Unable to update user")
@@ -235,7 +238,7 @@ func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 		defer app.Wg.Done()
 
 		pdf := app.generateManual(user, plan)
-		err := pdf.OutputFileAndClose(fmt.Sprintf("./tmp/%d_manual.pdf", user.ID))
+		err := pdf.OutputFileAndClose(fmt.Sprintf("%s/%d_manual.pdf", tmpPath, user.ID))
 		if err != nil {
 			app.ErrorChan <- err
 			return
@@ -245,7 +248,7 @@ func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 			Subject: "Your Manual",
 			Data:    "Your user manual is attached",
 			AttachmentsMap: map[string]string{
-				"Manual.pdf": fmt.Sprintf("./tmp/%d_manual.pdf", user.ID),
+				"Manual.pdf": fmt.Sprintf("%s/%d_manual.pdf", tmpPath, user.ID),
 			},
 		}
 
@@ -288,7 +291,7 @@ func (app *Config) generateManual(user data.User, plan *data.Plan) *gofpdf.Fpdf 
 
 	time.Sleep(5 * time.Second)
 
-	t := importer.ImportPage(pdf, "./pdf/manual.pdf", 1, "/MediaBox")
+	t := importer.ImportPage(pdf, fmt.Sprintf("%s/manual.pdf", pathToManual), 1, "/MediaBox")
 	pdf.AddPage()
 
 	importer.UseImportedTemplate(pdf, t, 0, 0, 215.9, 0)

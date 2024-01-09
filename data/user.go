@@ -195,7 +195,7 @@ func (u *User) GetOne(id int) (*User, error) {
 
 // Update updates one user in the database, using the information
 // stored in the receiver u
-func (u *User) Update() error {
+func (u *User) Update(user User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
@@ -208,12 +208,12 @@ func (u *User) Update() error {
 		where id = $6`
 
 	_, err := db.ExecContext(ctx, stmt,
-		u.Email,
-		u.FirstName,
-		u.LastName,
-		u.Active,
+		user.Email,
+		user.FirstName,
+		user.LastName,
+		user.Active,
 		time.Now(),
-		u.ID,
+		user.ID,
 	)
 
 	if err != nil {
@@ -224,19 +224,19 @@ func (u *User) Update() error {
 }
 
 // Delete deletes one user from the database, by User.ID
-func (u *User) Delete() error {
-	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
-	defer cancel()
+// func (u *User) Delete() error {
+// 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+// 	defer cancel()
 
-	stmt := `delete from users where id = $1`
+// 	stmt := `delete from users where id = $1`
 
-	_, err := db.ExecContext(ctx, stmt, u.ID)
-	if err != nil {
-		return err
-	}
+// 	_, err := db.ExecContext(ctx, stmt, u.ID)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // DeleteByID deletes one user from the database, by ID
 func (u *User) DeleteByID(id int) error {
